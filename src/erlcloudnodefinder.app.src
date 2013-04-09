@@ -4,10 +4,6 @@
               {modules,[erlcloudnodefinder,erlcloudnodefindersrv,erlcloudnodefindersup]},
               {registered,[erlcloudnodefindersrv]},
               {applications,[kernel,stdlib,erlcloud]},
-              {env,[{ping_timeout_sec,3},
-                    {ec2_home,"/usr"},
-                    {java_home,"/usr"},
-                    {private_key,"/usr/share/dukes/pk-FAHFONZ275K5P2QLZF67VUVCUKGSOB52.pem"},
-                    {cert,"/usr/share/dukes/cert-FAHFONZ275K5P2QLZF67VUVCUKGSOB52.pem"}]},
+              {env,[{mode,ec2}]}, % currently only mode = ec2 is supported
               {mod,{erlcloudnodefinder,[]}}]}
 .

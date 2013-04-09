@@ -10,13 +10,17 @@
 %-                                Public                               -
 %-=====================================================================-
 
-%% @spec discover () -> { ok, [ { Node::node (), pong | pang | timeout } ] }
+%% @spec discover () -> { ok, [ { Node::node (), boolean() | ignored } ] }
 %% @doc Initiate a discovery request.  Discovery is synchronous; the
 %% results are returned.
 %% @end
 
 discover () ->
-  erlcloudnodefindersrv:discover ().
+	{ ok, Mode } = application:get_env (erlcloudnodefinder, mode),
+	case Mode of
+		ec2 ->
+			erlcloudnodefinder_ec2_srv:discover ()
+	end.
 
 %-=====================================================================-
 %-                        application callbacks                        -
@@ -25,37 +29,32 @@ discover () ->
 %% @hidden
 
 start () ->
-  application:start (erlcloudnodefinder).
+	application:start (erlcloud),
+	application:start (erlcloudnodefinder).
 
 %% @hidden
 
 start (_Type, _Args) ->
-  Group = case application:get_env (erlcloudnodefinder, group) of
-    { ok, G } -> G;
-    _ -> first_security_group ()
-  end,
-  { ok, PingTimeout } = application:get_env (erlcloudnodefinder, ping_timeout_sec),
-  { ok, PrivateKey } = application:get_env (erlcloudnodefinder, private_key),
-  { ok, Cert } = application:get_env (erlcloudnodefinder, cert),
-  { ok, Ec2Home } = application:get_env (erlcloudnodefinder, ec2_home),
-  { ok, JavaHome } = application:get_env (erlcloudnodefinder, java_home),
-
-  erlcloudnodefindersup:start_link (Group, 
-                               1000 * PingTimeout,
-                               PrivateKey,
-                               Cert,
-                               Ec2Home,
-                               JavaHome).
+	io:format("erlcloudnodefinder start"),
+	
+	% mode = ec2 is currently the only supported option
+	{ ok, Mode } = application:get_env (erlcloudnodefinder, mode),
+	Group = case application:get_env (erlcloudnodefinder, group) of
+				{ ok, G } -> G;
+				_ -> get_group (Mode)
+			end,
+	
+	erlcloudnodefindersup:start_link (Group, Mode).
 
 %% @hidden
 
 stop () -> 
-  application:stop (erlcloudnodefinder).
+	application:stop (erlcloudnodefinder).
 
 %% @hidden
 
 stop (_State) ->
-  ok.
+	ok.
 
 %-=====================================================================-
 %-                               Private                               -
@@ -63,11 +62,16 @@ stop (_State) ->
 
 %% @private
 
-first_security_group () ->
-  Url = "http://169.254.169.254/2007-08-29/meta-data/security-groups",
-  case httpc:request (Url) of
-    { ok, { { _HttpVersion, 200, _Reason }, _Headers, Body } } ->
-      string:substr (Body, 1, string:cspan (Body, "\n"));
-    BadResult ->
-      erlang:error ({ http_request_failed, Url, BadResult })
-  end.
+get_group(ec2) ->
+	ec2_first_security_group ().
+
+%% @private
+
+ec2_first_security_group () ->
+	Url = "http://169.254.169.254/2007-08-29/meta-data/security-groups",
+	case httpc:request (Url) of
+		{ ok, { { _HttpVersion, 200, _Reason }, _Headers, Body } } ->
+			string:substr (Body, 1, string:cspan (Body, "\n"));
+		BadResult ->
+			erlang:error ({ http_request_failed, Url, BadResult })
+	end.
