@@ -1,0 +1,6 @@
+# BOF
+.project
+.svn
+ebin/*
+deps/*
+# EOF

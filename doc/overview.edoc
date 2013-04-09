@@ -1,0 +1,4 @@
+@author Paul Mineiro
+@copyright 2007 N54, Inc.
+@title Erlcloud Nodefinder (based off EC2 Nodefinder )
+@doc ec2nodefinder is a node discovery service based upon ec2-describe-instances. ercloudnodefinder uses Erlcloud to make the call and parse the response removes the requirement for ec2-api-tools to be installed
