@@ -14,7 +14,7 @@
 
 -record (state, { group, aws_config, ping_timeout }).
 
--include("../deps/erlcloud/include/erlcloud_ec2.hrl").
+-include_lib ("erlcloud/include/erlcloud_ec2.hrl").
 
 %-=====================================================================-
 %-                                Public                               -
