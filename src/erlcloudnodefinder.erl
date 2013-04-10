@@ -35,8 +35,6 @@ start () ->
 %% @hidden
 
 start (_Type, _Args) ->
-	io:format("erlcloudnodefinder start"),
-	
 	% mode = ec2 is currently the only supported option
 	{ ok, Mode } = application:get_env (erlcloudnodefinder, mode),
 	Group = case application:get_env (erlcloudnodefinder, group) of

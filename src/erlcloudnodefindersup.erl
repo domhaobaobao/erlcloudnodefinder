@@ -14,8 +14,6 @@ start_link (Group, Mode) ->
     (?MODULE, [ Group, Mode ]).
 
 init ([ Group, Mode ]) ->
-	io:format("erlcloudnodefindersup init"),
-
 	ChildSpecs = case Mode of
 					 ec2 ->
 						 { erlcloudnodefinder_ec2_srv,

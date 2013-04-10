@@ -36,22 +36,17 @@ discover () ->
 %-=====================================================================-
 
 init ([ Group ]) ->
-	io:format("erlcloudnodefinder_ec2_srv init 1~n"),
 	pong = net_adm:ping (node ()), % don't startup unless distributed
 	{ ok, AccessKeyID } = application:get_env (erlcloudnodefinder, ec2_access_key_id), 
 	{ ok, SecretAccessKey } = application:get_env (erlcloudnodefinder, ec2_secret_access_key), 
 	{ ok, Host } = application:get_env (erlcloudnodefinder, ec2_host),
 	Timeout = 3000,
 	
-	io:format("erlcloudnodefinder_ec2_srv init 2~n"),
 	AWSConfig = erlcloud_ec2:new(AccessKeyID, SecretAccessKey, Host),
 	
 	process_flag (trap_exit, true),
-	io:format("erlcloudnodefinder_ec2_srv init 3~n"),
 	State = #state{ group = Group, aws_config = AWSConfig, ping_timeout = Timeout },
-	io:format("erlcloudnodefinder_ec2_srv init 4~n"),
 	discover (State),
-	io:format("erlcloudnodefinder_ec2_srv init 5~n"),
 	{ ok, State }.
 
 handle_call (discover, _From, State) -> 
