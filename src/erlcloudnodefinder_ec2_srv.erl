@@ -22,10 +22,10 @@
 
 start_link (Group)
   when is_list (Group) ->
-	gen_server:start_link 
-	  ({ local, ?MODULE }, 
-	   ?MODULE, 
-	   [ Group ], 
+	gen_server:start_link
+	  ({ local, ?MODULE },
+	   ?MODULE,
+	   [ Group ],
 	   []).
 
 discover () ->
@@ -37,15 +37,16 @@ discover () ->
 
 init ([ Group ]) ->
 	pong = net_adm:ping (node ()), % don't startup unless distributed
-	{ ok, AccessKeyID } = application:get_env (erlcloudnodefinder, ec2_access_key_id), 
-	{ ok, SecretAccessKey } = application:get_env (erlcloudnodefinder, ec2_secret_access_key), 
+	{ ok, AccessKeyID } = application:get_env (erlcloudnodefinder, ec2_access_key_id),
+	{ ok, SecretAccessKey } = application:get_env (erlcloudnodefinder, ec2_secret_access_key),
 	{ ok, Host } = application:get_env (erlcloudnodefinder, ec2_host),
 	Timeout = 3000,
-	
+
 	AWSConfig = erlcloud_ec2:new(AccessKeyID, SecretAccessKey, Host),
-	
+    GroupId = get_group_id(Group, AWSConfig),
+
 	process_flag (trap_exit, true),
-	State = #state{ group = Group, aws_config = AWSConfig, ping_timeout = Timeout },
+	State = #state{ group = GroupId, aws_config = AWSConfig, ping_timeout = Timeout },
 	discover (State),
 	{ ok, State }.
 
@@ -104,23 +105,27 @@ get_erlcloud_list (AWSConfig, Group) ->
 % describe_instances response = 
 % Reservation = {reservation_id, ReservationId},  {owner_id, OwnerId}, {group_set, GroupSet}, {instances_set, Instances}
 %
-	ReservationsList = erlcloud_ec2:describe_instances(AWSConfig),
+    {ok, ReservationsList} = erlcloud_ec2:describe_instances(AWSConfig),
 	lists:foldl(fun(ReservationPropList, CurrentList) ->
-					GroupList = proplists:get_value(group_set, ReservationPropList),
 					InstanceList = proplists:get_value(instances_set, ReservationPropList),
 
-					case lists:member(Group, GroupList) of 
-						true ->
-							lists:foldl(fun(InstancePropList, CurrentListInner) ->
-								[proplists:get_value(private_ip_address, InstancePropList) | CurrentListInner]
-							end, CurrentList, InstanceList);
-						false ->
-							CurrentList
-					end
-				end, [], ReservationsList).
-	
+                    CurrentList ++ lists:foldl(fun(InstancePropList, CurrentListInner) ->
+					    GroupList = proplists:get_value(group_set, InstancePropList),
+                        case lists:member(Group, GroupList) of
+                            true ->
+                                    [proplists:get_value(private_ip_address, InstancePropList) | CurrentListInner];
+						    false ->
+                                CurrentListInner
+					    end
+                    end, [], InstanceList)
+    end, [], ReservationsList).
+
 start_names (Host, Timeout) ->
 	async (fun () -> net_adm:names (Host) end, Timeout).
 
 connect (Node, Timeout) ->
 	async (fun () -> net_kernel:connect_node(Node) end, Timeout).
+
+get_group_id(Group, AWSConfig) ->
+    {ok, SecGroupList} = erlcloud_ec2:describe_security_groups([Group], AWSConfig),
+    proplists:get_value(group_id, hd(SecGroupList)).
