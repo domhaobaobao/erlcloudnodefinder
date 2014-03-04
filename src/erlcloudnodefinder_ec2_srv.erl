@@ -43,10 +43,9 @@ init ([ Group ]) ->
 	Timeout = 3000,
 
 	AWSConfig = erlcloud_ec2:new(AccessKeyID, SecretAccessKey, Host),
-    GroupId = get_group_id(Group, AWSConfig),
 
 	process_flag (trap_exit, true),
-	State = #state{ group = GroupId, aws_config = AWSConfig, ping_timeout = Timeout },
+	State = #state{ group = Group, aws_config = AWSConfig, ping_timeout = Timeout },
 	discover (State),
 	{ ok, State }.
 
@@ -104,14 +103,15 @@ discover (State) ->
 get_erlcloud_list (AWSConfig, Group) ->
 % describe_instances response = 
 % Reservation = {reservation_id, ReservationId},  {owner_id, OwnerId}, {group_set, GroupSet}, {instances_set, Instances}
-%
-    {ok, ReservationsList} = erlcloud_ec2:describe_instances(AWSConfig),
+
+	GroupId = get_group_id(Group, AWSConfig),
+	{ok, ReservationsList} = erlcloud_ec2:describe_instances(AWSConfig),
 	lists:foldl(fun(ReservationPropList, CurrentList) ->
 					InstanceList = proplists:get_value(instances_set, ReservationPropList),
 
                     CurrentList ++ lists:foldl(fun(InstancePropList, CurrentListInner) ->
 					    GroupList = proplists:get_value(group_set, InstancePropList),
-                        case lists:member(Group, GroupList) of
+                        case lists:member(Group, GroupList) or lists:member(GroupId, GroupList) of
                             true ->
                                     [proplists:get_value(private_ip_address, InstancePropList) | CurrentListInner];
 						    false ->
@@ -127,5 +127,5 @@ connect (Node, Timeout) ->
 	async (fun () -> net_kernel:connect_node(Node) end, Timeout).
 
 get_group_id(Group, AWSConfig) ->
-    {ok, SecGroupList} = erlcloud_ec2:describe_security_groups([Group], AWSConfig),
-    proplists:get_value(group_id, hd(SecGroupList)).
+	{ok, SecGroupList} = erlcloud_ec2:describe_security_groups([Group], AWSConfig),
+	proplists:get_value(group_id, hd(SecGroupList)).
