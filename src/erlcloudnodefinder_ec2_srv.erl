@@ -95,9 +95,9 @@ discover (State) ->
 			{ Host, { ok, NamesAndPorts } } <- 
 				[ { Host, collect (Key, Timeout) } ||
 				  { Host, Key } <- [ { Host, start_names (Host, Timeout) } 
-									 || Host <- get_erlcloud_list (AWSConfig, Group) ] ],
+									 || { Host, DNSName} <- get_erlcloud_list (AWSConfig, Group) ] ],
 			{ Name, _ } <- NamesAndPorts,
-			Node <- [ list_to_atom (Name ++ "@" ++ Host) ] ] ].
+			Node <- [ list_to_atom (Name ++ "@" ++ DNSName) ] ] ].
 
 
 get_erlcloud_list (AWSConfig, Group) ->
@@ -113,7 +113,7 @@ get_erlcloud_list (AWSConfig, Group) ->
 					    GroupList = proplists:get_value(group_set, InstancePropList),
                         case lists:member(Group, GroupList) or lists:member(GroupId, GroupList) or lists:member([{group_id,GroupId},{group_name,Group}], GroupList)of
                             true ->
-                                    [proplists:get_value(private_ip_address, InstancePropList) | CurrentListInner];
+                                    [{proplists:get_value(private_ip_address, InstancePropList), proplists:get_value(private_dns_name, InstancePropList) } | CurrentListInner];
 						    false ->
                                 CurrentListInner
 					    end
