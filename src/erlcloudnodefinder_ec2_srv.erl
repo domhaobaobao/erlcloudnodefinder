@@ -111,7 +111,7 @@ get_erlcloud_list (AWSConfig, Group) ->
 
                     CurrentList ++ lists:foldl(fun(InstancePropList, CurrentListInner) ->
 					    GroupList = proplists:get_value(group_set, InstancePropList),
-                        case lists:member(Group, GroupList) or lists:member(GroupId, GroupList) of
+                        case lists:member(Group, GroupList) or lists:member(GroupId, GroupList) or lists:member([{group_id,GroupId},{group_name,Group}], GroupList)of
                             true ->
                                     [proplists:get_value(private_ip_address, InstancePropList) | CurrentListInner];
 						    false ->
