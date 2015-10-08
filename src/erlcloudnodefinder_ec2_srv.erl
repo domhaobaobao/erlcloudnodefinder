@@ -92,10 +92,10 @@ discover (State) ->
 	[ { Node, collect (Key2, Timeout) } ||
 	  { Node, Key2 } <- 
 		  [ { Node, connect (Node, Timeout) } ||
-			{ Host, { ok, NamesAndPorts } } <- 
-				[ { Host, collect (Key, Timeout) } ||
-				  { Host, Key } <- [ { Host, start_names (Host, Timeout) } 
-									 || { Host, DNSName} <- get_erlcloud_list (AWSConfig, Group) ] ],
+			{ Host, DNSName, { ok, NamesAndPorts } } <-
+				[ { Host, DNSName, collect (Key, Timeout) } ||
+					{ Host, DNSName, Key } <- [ { Host, DNSName, start_names (Host, Timeout) }
+									|| { Host, DNSName} <- get_erlcloud_list (AWSConfig, Group) ] ],
 			{ Name, _ } <- NamesAndPorts,
 			Node <- [ list_to_atom (Name ++ "@" ++ DNSName) ] ] ].
 
